@@ -7,6 +7,10 @@ The Vulkan Java API is an object-oriented Java library, backed by the
 of struct construction and memory management into classes that are more easily understood by those uncomfortable with
 such concepts.
 
+### Disclaimer
+
+This library is a work-in-progress, and the API is incomplete. Contributions and feedback are welcome and appreciated.
+
 ### But why?
 
 The original goal behind writing this library was, first and foremost, to familiarize myself with the Vulkan API.
