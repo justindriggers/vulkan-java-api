@@ -1,0 +1,70 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'com.jfrog.bintray' version '1.8.4'
+}
+
+group = 'com.justindriggers'
+version = '0.0.1'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.lwjgl:lwjgl:$lwjglVersion")
+    implementation("org.lwjgl:lwjgl-glfw:$lwjglVersion")
+    implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+publishing {
+    publications {
+        mavenPublication(MavenPublication) {
+            from components.java
+
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+}
+
+bintray {
+    user = System.getProperty('bintray.user')
+    key = System.getProperty('bintray.key')
+    publications = ['mavenPublication']
+    dryRun = false
+    publish = false
+
+    pkg {
+        repo = 'vulkan-java-api'
+        name = 'vulkan-java-api'
+        websiteUrl = 'https://github.com/justindriggers/vulkan-java-api'
+        issueTrackerUrl = 'https://github.com/justindriggers/vulkan-java-api/issues'
+        vcsUrl = 'https://github.com/justindriggers/vulkan-java-api.git'
+        licenses = ['Apache-2.0']
+        labels = ['vulkan', 'java', 'api']
+        publicDownloadNumbers = true
+        version.released = new Date()
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.10'
+}
