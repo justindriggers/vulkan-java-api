@@ -39,6 +39,9 @@ layer for Apple systems.
 
 ```
 import org.gradle.internal.os.OperatingSystem
+
+project.ext.lwjglVersion = "3.2.0"
+project.ext.hasVulkanNatives = false
    
 switch (OperatingSystem.current()) {
    case OperatingSystem.WINDOWS:
@@ -49,6 +52,7 @@ switch (OperatingSystem.current()) {
        break
    case OperatingSystem.MAC_OS:
        project.ext.lwjglNatives = "natives-macos"
+       project.ext.hasVulkanNatives = true
        break
 }
    
@@ -64,7 +68,10 @@ dependencies {
 
    implementation("org.lwjgl:lwjgl:$lwjglVersion:$lwjglNatives")
    implementation("org.lwjgl:lwjgl-glfw:$lwjglVersion:$lwjglNatives")
-   implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$lwjglNatives")
+   
+   if (project.ext.hasVulkanNatives) {
+       implementation("org.lwjgl:lwjgl-vulkan:$lwjglVersion:$lwjglNatives")
+   }
 }
 ```
 
