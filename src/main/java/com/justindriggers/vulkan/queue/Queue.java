@@ -46,22 +46,29 @@ public class Queue extends ReferencePointer<VkQueue> {
                 .map(List::size)
                 .orElse(0);
 
-        if ((waitSemaphoresCount > 0 && waitDstStages == null)
-                || (waitSemaphoresCount != waitDstStages.size())) {
-            throw new IllegalArgumentException("Number of wait semaphores must be the same as the number of wait DST stages");
+        final LongBuffer waitSemaphoreHandles;
+
+        if (waitSemaphoresCount > 0) {
+            waitSemaphoreHandles = memAllocLong(waitSemaphores.size());
+            waitSemaphores.stream()
+                    .map(Pointer::getAddress)
+                    .forEach(waitSemaphoreHandles::put);
+            waitSemaphoreHandles.flip();
+        } else {
+            waitSemaphoreHandles = null;
         }
 
-        final LongBuffer waitSemaphoreHandles = memAllocLong(waitSemaphores.size());
-        waitSemaphores.stream()
-                .map(Pointer::getAddress)
-                .forEach(waitSemaphoreHandles::put);
-        waitSemaphoreHandles.flip();
+        final IntBuffer dstStageMask;
 
-        final IntBuffer dstStageMask = memAllocInt(1);
-        waitDstStages.stream()
-                .map(Maskable::toBit)
-                .forEach(dstStageMask::put);
-        dstStageMask.flip();
+        if (waitDstStages != null) {
+            dstStageMask = memAllocInt(waitDstStages.size());
+            waitDstStages.stream()
+                    .map(Maskable::toBit)
+                    .forEach(dstStageMask::put);
+            dstStageMask.flip();
+        } else {
+            dstStageMask = null;
+        }
 
         final PointerBuffer commandBufferPointers = memAllocPointer(commandBuffers.size());
         commandBuffers.stream()
@@ -69,11 +76,17 @@ public class Queue extends ReferencePointer<VkQueue> {
                 .forEach(commandBufferPointers::put);
         commandBufferPointers.flip();
 
-        final LongBuffer signalSemaphoreHandles = memAllocLong(signalSemaphores.size());
-        signalSemaphores.stream()
-                .map(Pointer::getAddress)
-                .forEach(signalSemaphoreHandles::put);
-        signalSemaphoreHandles.flip();
+        final LongBuffer signalSemaphoreHandles;
+
+        if (signalSemaphores != null) {
+            signalSemaphoreHandles = memAllocLong(signalSemaphores.size());
+            signalSemaphores.stream()
+                    .map(Pointer::getAddress)
+                    .forEach(signalSemaphoreHandles::put);
+            signalSemaphoreHandles.flip();
+        } else {
+            signalSemaphoreHandles = null;
+        }
 
         final long fenceHandle = Optional.ofNullable(fence)
                 .map(Pointer::getAddress)

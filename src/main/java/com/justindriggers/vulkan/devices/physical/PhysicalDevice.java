@@ -1,5 +1,8 @@
 package com.justindriggers.vulkan.devices.physical;
 
+import com.justindriggers.vulkan.devices.physical.models.MemoryHeap;
+import com.justindriggers.vulkan.devices.physical.models.MemoryProperty;
+import com.justindriggers.vulkan.devices.physical.models.MemoryType;
 import com.justindriggers.vulkan.devices.physical.models.PhysicalDeviceProperties;
 import com.justindriggers.vulkan.instance.VulkanFunction;
 import com.justindriggers.vulkan.models.Extension;
@@ -9,12 +12,15 @@ import com.justindriggers.vulkan.queue.QueueCapability;
 import com.justindriggers.vulkan.queue.QueueFamily;
 import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.VkExtensionProperties;
+import org.lwjgl.vulkan.VkMemoryType;
 import org.lwjgl.vulkan.VkPhysicalDevice;
+import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
 import java.nio.IntBuffer;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,6 +28,7 @@ import java.util.stream.IntStream;
 import static org.lwjgl.system.MemoryUtil.memAllocInt;
 import static org.lwjgl.system.MemoryUtil.memFree;
 import static org.lwjgl.vulkan.VK10.vkEnumerateDeviceExtensionProperties;
+import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceMemoryProperties;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceProperties;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceQueueFamilyProperties;
 
@@ -142,6 +149,35 @@ public class PhysicalDevice extends ReferencePointer<VkPhysicalDevice> {
             }
         } else {
             result = Collections.emptySet();
+        }
+
+        return result;
+    }
+
+    public List<MemoryType> getMemoryTypes() {
+        final List<MemoryType> result;
+
+        final VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties = VkPhysicalDeviceMemoryProperties.calloc();
+
+        try {
+            vkGetPhysicalDeviceMemoryProperties(unwrap(), physicalDeviceMemoryProperties);
+
+            final List<MemoryHeap> heaps = IntStream.range(0, physicalDeviceMemoryProperties.memoryHeapCount())
+                    .mapToObj(physicalDeviceMemoryProperties::memoryHeaps)
+                    .map(MemoryHeap::new)
+                    .collect(Collectors.toList());
+
+            result = IntStream.range(0, physicalDeviceMemoryProperties.memoryTypeCount())
+                    .mapToObj(i -> {
+                        final VkMemoryType vkMemoryType = physicalDeviceMemoryProperties.memoryTypes(i);
+                        final Set<MemoryProperty> properties = Maskable.fromBitMask(vkMemoryType.propertyFlags(),
+                                MemoryProperty.class);
+                        final MemoryHeap heap = heaps.get(vkMemoryType.heapIndex());
+                        return new MemoryType(i, properties, heap);
+                    })
+                    .collect(Collectors.toList());
+        } finally {
+            physicalDeviceMemoryProperties.free();
         }
 
         return result;

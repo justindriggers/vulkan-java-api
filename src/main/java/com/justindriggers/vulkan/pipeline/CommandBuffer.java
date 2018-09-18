@@ -1,13 +1,14 @@
 package com.justindriggers.vulkan.pipeline;
 
 import com.justindriggers.vulkan.instance.VulkanFunction;
+import com.justindriggers.vulkan.models.Maskable;
 import com.justindriggers.vulkan.models.pointers.DisposableReferencePointer;
 import com.justindriggers.vulkan.pipeline.commands.Command;
+import com.justindriggers.vulkan.pipeline.models.CommandBufferUsage;
 import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkCommandBufferBeginInfo;
 
-import static org.lwjgl.vulkan.VK10.VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 import static org.lwjgl.vulkan.VK10.vkBeginCommandBuffer;
 import static org.lwjgl.vulkan.VK10.vkEndCommandBuffer;
@@ -23,10 +24,10 @@ public class CommandBuffer extends DisposableReferencePointer<VkCommandBuffer> {
         // Nothing to do, but disposal ensures that nothing can reference the underlying pointer or value
     }
 
-    public void begin() {
+    public void begin(final CommandBufferUsage... usages) {
         final VkCommandBufferBeginInfo commandBufferBeginInfo = VkCommandBufferBeginInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
-                .flags(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+                .flags(Maskable.toBitMask(usages));
 
         try {
             VulkanFunction.execute(() -> vkBeginCommandBuffer(unwrap(), commandBufferBeginInfo));
