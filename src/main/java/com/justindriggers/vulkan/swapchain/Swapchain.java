@@ -1,7 +1,10 @@
 package com.justindriggers.vulkan.swapchain;
 
 import com.justindriggers.vulkan.devices.logical.LogicalDevice;
+import com.justindriggers.vulkan.image.Image;
 import com.justindriggers.vulkan.instance.VulkanFunction;
+import com.justindriggers.vulkan.models.ColorFormat;
+import com.justindriggers.vulkan.models.ColorSpace;
 import com.justindriggers.vulkan.models.Extent2D;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
 import com.justindriggers.vulkan.models.pointers.Pointer;
@@ -9,9 +12,6 @@ import com.justindriggers.vulkan.queue.QueueFamily;
 import com.justindriggers.vulkan.surface.Surface;
 import com.justindriggers.vulkan.surface.models.PresentMode;
 import com.justindriggers.vulkan.surface.models.capabilities.SurfaceTransform;
-import com.justindriggers.vulkan.surface.models.format.ColorFormat;
-import com.justindriggers.vulkan.surface.models.format.ColorSpace;
-import com.justindriggers.vulkan.swapchain.models.Image;
 import com.justindriggers.vulkan.synchronize.Fence;
 import com.justindriggers.vulkan.synchronize.Semaphore;
 import org.lwjgl.vulkan.VkSwapchainCreateInfoKHR;

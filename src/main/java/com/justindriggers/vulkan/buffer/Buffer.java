@@ -2,8 +2,8 @@ package com.justindriggers.vulkan.buffer;
 
 import com.justindriggers.vulkan.buffer.models.BufferUsage;
 import com.justindriggers.vulkan.buffer.models.MemoryRequirements;
-import com.justindriggers.vulkan.devices.logical.LogicalDevice;
 import com.justindriggers.vulkan.devices.logical.DeviceMemory;
+import com.justindriggers.vulkan.devices.logical.LogicalDevice;
 import com.justindriggers.vulkan.instance.VulkanFunction;
 import com.justindriggers.vulkan.models.Maskable;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;

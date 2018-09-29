@@ -88,7 +88,7 @@ public class LogicalDevice extends DisposableReferencePointer<VkDevice> {
         try {
             VulkanFunction.execute(() -> vkAllocateMemory(unwrap(), memoryAllocateInfo, null, memory));
 
-            result = new DeviceMemory(this, memory.get(0));
+            result = new DeviceMemory(this, memoryType, memory.get(0));
         } finally {
             memFree(memory);
 

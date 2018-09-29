@@ -1,10 +1,10 @@
 package com.justindriggers.vulkan.swapchain;
 
 import com.justindriggers.vulkan.devices.logical.LogicalDevice;
+import com.justindriggers.vulkan.image.ImageView;
 import com.justindriggers.vulkan.instance.VulkanFunction;
 import com.justindriggers.vulkan.models.Extent2D;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
-import com.justindriggers.vulkan.pipeline.RenderPass;
 import org.lwjgl.vulkan.VkFramebufferCreateInfo;
 
 import java.nio.LongBuffer;
