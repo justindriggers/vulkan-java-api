@@ -4,9 +4,14 @@ import com.justindriggers.vulkan.devices.logical.LogicalDevice;
 import com.justindriggers.vulkan.instance.VulkanFunction;
 import com.justindriggers.vulkan.models.Extent2D;
 import com.justindriggers.vulkan.models.HasValue;
+import com.justindriggers.vulkan.models.Maskable;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
-import com.justindriggers.vulkan.pipeline.shader.ShaderModule;
-import com.justindriggers.vulkan.surface.models.format.ColorFormat;
+import com.justindriggers.vulkan.pipeline.models.assembly.InputAssemblyState;
+import com.justindriggers.vulkan.pipeline.models.vertex.VertexInputAttribute;
+import com.justindriggers.vulkan.pipeline.models.vertex.VertexInputBinding;
+import com.justindriggers.vulkan.pipeline.models.vertex.VertexInputState;
+import com.justindriggers.vulkan.pipeline.shader.ShaderStage;
+import com.justindriggers.vulkan.swapchain.RenderPass;
 import org.lwjgl.vulkan.VkGraphicsPipelineCreateInfo;
 import org.lwjgl.vulkan.VkPipelineColorBlendAttachmentState;
 import org.lwjgl.vulkan.VkPipelineColorBlendStateCreateInfo;
@@ -22,6 +27,9 @@ import org.lwjgl.vulkan.VkVertexInputBindingDescription;
 import org.lwjgl.vulkan.VkViewport;
 
 import java.nio.LongBuffer;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
@@ -36,13 +44,10 @@ import static org.lwjgl.vulkan.VK10.VK_COLOR_COMPONENT_B_BIT;
 import static org.lwjgl.vulkan.VK10.VK_COLOR_COMPONENT_G_BIT;
 import static org.lwjgl.vulkan.VK10.VK_COLOR_COMPONENT_R_BIT;
 import static org.lwjgl.vulkan.VK10.VK_CULL_MODE_BACK_BIT;
-import static org.lwjgl.vulkan.VK10.VK_FRONT_FACE_CLOCKWISE;
+import static org.lwjgl.vulkan.VK10.VK_FRONT_FACE_COUNTER_CLOCKWISE;
 import static org.lwjgl.vulkan.VK10.VK_NULL_HANDLE;
 import static org.lwjgl.vulkan.VK10.VK_POLYGON_MODE_FILL;
-import static org.lwjgl.vulkan.VK10.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 import static org.lwjgl.vulkan.VK10.VK_SAMPLE_COUNT_1_BIT;
-import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_FRAGMENT_BIT;
-import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -51,7 +56,6 @@ import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STA
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-import static org.lwjgl.vulkan.VK10.VK_VERTEX_INPUT_RATE_VERTEX;
 import static org.lwjgl.vulkan.VK10.vkCreateGraphicsPipelines;
 import static org.lwjgl.vulkan.VK10.vkDestroyPipeline;
 
@@ -60,12 +64,14 @@ public class GraphicsPipeline extends DisposablePointer {
     private final LogicalDevice device;
 
     public GraphicsPipeline(final LogicalDevice device,
-                            final ShaderModule vertexShader,
-                            final ShaderModule fragmentShader,
+                            final List<ShaderStage> stages,
+                            final VertexInputState vertexInputState,
+                            final InputAssemblyState inputAssemblyState,
                             final Extent2D imageExtent,
                             final RenderPass renderPass,
                             final PipelineLayout pipelineLayout) {
-        super(createGraphicsPipeline(device, vertexShader, fragmentShader, imageExtent, renderPass, pipelineLayout));
+        super(createGraphicsPipeline(device, stages, vertexInputState, inputAssemblyState, imageExtent, renderPass,
+                pipelineLayout));
         this.device = device;
     }
 
@@ -75,8 +81,9 @@ public class GraphicsPipeline extends DisposablePointer {
     }
 
     private static long createGraphicsPipeline(final LogicalDevice device,
-                                               final ShaderModule vertexShader,
-                                               final ShaderModule fragmentShader,
+                                               final List<ShaderStage> stages,
+                                               final VertexInputState vertexInputState,
+                                               final InputAssemblyState inputAssemblyState,
                                                final Extent2D imageExtent,
                                                final RenderPass renderPass,
                                                final PipelineLayout pipelineLayout) {
@@ -84,46 +91,54 @@ public class GraphicsPipeline extends DisposablePointer {
 
         final LongBuffer graphicsPipeline = memAllocLong(1);
 
-        // TODO Dynamic shader descriptors
-        final VkPipelineShaderStageCreateInfo vertexShaderStageCreateInfo = VkPipelineShaderStageCreateInfo.calloc()
-                .sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
-                .stage(VK_SHADER_STAGE_VERTEX_BIT)
-                .module(vertexShader.getAddress())
-                .pName(memUTF8("main"));
+        final VkPipelineShaderStageCreateInfo.Buffer shaderStageCreateInfos = VkPipelineShaderStageCreateInfo.calloc(stages.size());
 
-        final VkPipelineShaderStageCreateInfo fragmentShaderStageCreateInfo = VkPipelineShaderStageCreateInfo.calloc()
-                .sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
-                .stage(VK_SHADER_STAGE_FRAGMENT_BIT)
-                .module(fragmentShader.getAddress())
-                .pName(memUTF8("main"));
+        stages.forEach(stage -> {
+            final VkPipelineShaderStageCreateInfo stageCreateInfo = VkPipelineShaderStageCreateInfo.calloc()
+                    .sType(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO)
+                    .stage(Maskable.toBit(stage.getType()))
+                    .module(stage.getModule().getAddress())
+                    .pName(memUTF8(stage.getEntryPoint()));
 
-        final VkPipelineShaderStageCreateInfo.Buffer shaderStageCreateInfos = VkPipelineShaderStageCreateInfo.calloc(2)
-                .put(vertexShaderStageCreateInfo)
-                .put(fragmentShaderStageCreateInfo)
-                .flip();
+            shaderStageCreateInfos.put(stageCreateInfo);
+        });
 
-        // TODO Dynamic vertex inputs
-        final VkVertexInputBindingDescription.Buffer vertexInputBindingDescriptions = VkVertexInputBindingDescription.calloc(1)
-                .binding(0)
-                .stride(4 * 2 + 4 * 3)
-                .inputRate(VK_VERTEX_INPUT_RATE_VERTEX);
+        shaderStageCreateInfos.flip();
 
-        final VkVertexInputAttributeDescription positionVertexAttributeDescription = VkVertexInputAttributeDescription.calloc()
-                .binding(0)
-                .location(0)
-                .format(HasValue.getValue(ColorFormat.R32G32_SFLOAT)) // Vector2
-                .offset(0);
+        // Bindings
+        final List<VertexInputBinding> vertexInputBindings = Optional.ofNullable(vertexInputState.getVertexInputBindings())
+                .orElseGet(Collections::emptyList);
 
-        final VkVertexInputAttributeDescription colorVertexAttributeDescription = VkVertexInputAttributeDescription.calloc()
-                .binding(0)
-                .location(1)
-                .format(HasValue.getValue(ColorFormat.R32G32B32_SFLOAT)) // Vector3
-                .offset(4 * 2);
+        final VkVertexInputBindingDescription.Buffer vertexInputBindingDescriptions = VkVertexInputBindingDescription.calloc(vertexInputBindings.size());
 
-        final VkVertexInputAttributeDescription.Buffer vertexInputAttributeDescriptions = VkVertexInputAttributeDescription.calloc(2)
-                .put(positionVertexAttributeDescription)
-                .put(colorVertexAttributeDescription)
-                .flip();
+        vertexInputBindings.forEach(vertexInputBinding -> {
+            final VkVertexInputBindingDescription vertexInputBindingDescription = VkVertexInputBindingDescription.calloc()
+                    .binding(vertexInputBinding.getBinding())
+                    .stride(vertexInputBinding.getStride())
+                    .inputRate(HasValue.getValue(vertexInputBinding.getRate()));
+
+            vertexInputBindingDescriptions.put(vertexInputBindingDescription);
+        });
+
+        vertexInputBindingDescriptions.flip();
+
+        // Attributes
+        final List<VertexInputAttribute> vertexInputAttributes = Optional.ofNullable(vertexInputState.getVertexInputAttributes())
+                .orElseGet(Collections::emptyList);
+
+        final VkVertexInputAttributeDescription.Buffer vertexInputAttributeDescriptions = VkVertexInputAttributeDescription.calloc(vertexInputAttributes.size());
+
+        vertexInputAttributes.forEach(vertexInputAttribute -> {
+            final VkVertexInputAttributeDescription vertexInputAttributeDescription = VkVertexInputAttributeDescription.calloc()
+                    .binding(vertexInputAttribute.getBinding())
+                    .location(vertexInputAttribute.getLocation())
+                    .format(HasValue.getValue(vertexInputAttribute.getFormat()))
+                    .offset(vertexInputAttribute.getOffset());
+
+            vertexInputAttributeDescriptions.put(vertexInputAttributeDescription);
+        });
+
+        vertexInputAttributeDescriptions.flip();
 
         final VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = VkPipelineVertexInputStateCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO)
@@ -132,14 +147,14 @@ public class GraphicsPipeline extends DisposablePointer {
 
         final VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = VkPipelineInputAssemblyStateCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO)
-                .topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-                .primitiveRestartEnable(false);
+                .topology(HasValue.getValue(inputAssemblyState.getTopology()))
+                .primitiveRestartEnable(inputAssemblyState.isPrimitiveRestartEnabled());
 
         final VkViewport.Buffer viewport = VkViewport.calloc(1)
                 .x(0)
-                .y(0)
+                .y(imageExtent.getHeight())
                 .width(imageExtent.getWidth())
-                .height(imageExtent.getHeight())
+                .height(-imageExtent.getHeight())
                 .minDepth(0.0f)
                 .maxDepth(1.0f);
 
@@ -165,7 +180,7 @@ public class GraphicsPipeline extends DisposablePointer {
                 .polygonMode(VK_POLYGON_MODE_FILL)
                 .lineWidth(1.0f)
                 .cullMode(VK_CULL_MODE_BACK_BIT)
-                .frontFace(VK_FRONT_FACE_CLOCKWISE)
+                .frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
                 .depthBiasEnable(false);
 
         final VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = VkPipelineMultisampleStateCreateInfo.calloc()

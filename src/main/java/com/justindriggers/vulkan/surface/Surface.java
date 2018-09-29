@@ -6,8 +6,8 @@ import com.justindriggers.vulkan.instance.VulkanInstance;
 import com.justindriggers.vulkan.models.HasValue;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
 import com.justindriggers.vulkan.surface.models.PresentMode;
+import com.justindriggers.vulkan.surface.models.SurfaceFormat;
 import com.justindriggers.vulkan.surface.models.capabilities.SurfaceCapabilities;
-import com.justindriggers.vulkan.surface.models.format.SurfaceFormat;
 import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 import org.lwjgl.vulkan.VkSurfaceFormatKHR;
 

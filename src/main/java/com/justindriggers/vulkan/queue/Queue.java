@@ -1,10 +1,10 @@
 package com.justindriggers.vulkan.queue;
 
+import com.justindriggers.vulkan.command.CommandBuffer;
 import com.justindriggers.vulkan.instance.VulkanFunction;
 import com.justindriggers.vulkan.models.Maskable;
 import com.justindriggers.vulkan.models.pointers.Pointer;
 import com.justindriggers.vulkan.models.pointers.ReferencePointer;
-import com.justindriggers.vulkan.pipeline.CommandBuffer;
 import com.justindriggers.vulkan.pipeline.models.PipelineStage;
 import com.justindriggers.vulkan.swapchain.Swapchain;
 import com.justindriggers.vulkan.synchronize.Fence;
