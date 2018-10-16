@@ -3,7 +3,7 @@ package com.justindriggers.vulkan.models;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK11;
 
-public enum ColorFormat implements HasValue<Integer> {
+public enum Format implements HasValue<Integer> {
 
     UNDEFINED(VK10.VK_FORMAT_UNDEFINED),
     R4G4_UNORM_PACK8(VK10.VK_FORMAT_R4G4_UNORM_PACK8),
@@ -227,7 +227,7 @@ public enum ColorFormat implements HasValue<Integer> {
 
     private final int value;
 
-    ColorFormat(final int value) {
+    Format(final int value) {
         this.value = value;
     }
 

@@ -1,58 +1,73 @@
 package com.justindriggers.vulkan.command.commands;
 
 import com.justindriggers.vulkan.command.CommandBuffer;
-import com.justindriggers.vulkan.models.Extent2D;
+import com.justindriggers.vulkan.models.HasValue;
+import com.justindriggers.vulkan.models.Rect2D;
+import com.justindriggers.vulkan.models.clear.ClearValue;
 import com.justindriggers.vulkan.swapchain.Framebuffer;
 import com.justindriggers.vulkan.swapchain.RenderPass;
+import com.justindriggers.vulkan.swapchain.models.SubpassContents;
 import org.lwjgl.vulkan.VkClearValue;
 import org.lwjgl.vulkan.VkRenderPassBeginInfo;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-import static org.lwjgl.vulkan.VK10.VK_SUBPASS_CONTENTS_INLINE;
 import static org.lwjgl.vulkan.VK10.vkCmdBeginRenderPass;
 
 public class BeginRenderPassCommand implements Command {
 
+    private final SubpassContents subpassContents;
     private final RenderPass renderPass;
     private final Framebuffer framebuffer;
-    private final Extent2D imageExtent;
+    private final Rect2D renderArea;
+    private final List<ClearValue> clearValues;
 
-    public BeginRenderPassCommand(final RenderPass renderPass,
+    public BeginRenderPassCommand(final SubpassContents subpassContents,
+                                  final RenderPass renderPass,
                                   final Framebuffer framebuffer,
-                                  final Extent2D imageExtent) {
+                                  final Rect2D renderArea,
+                                  final List<ClearValue> clearValues) {
+        this.subpassContents = subpassContents;
         this.renderPass = renderPass;
         this.framebuffer = framebuffer;
-        this.imageExtent = imageExtent;
+        this.renderArea = renderArea;
+        this.clearValues = clearValues;
     }
 
     @Override
     public void execute(final CommandBuffer commandBuffer) {
-        final VkClearValue.Buffer clearValues = VkClearValue.calloc(2);
+        final List<ClearValue> clearValuesSafe = Optional.ofNullable(clearValues)
+                .orElseGet(Collections::emptyList);
 
-        clearValues.get(0).color()
-                .float32(0, 0.0f)
-                .float32(1, 0.0f)
-                .float32(2, 0.0f)
-                .float32(3, 1.0f);
+        final VkClearValue.Buffer clearValuesBuffer = VkClearValue.calloc(clearValuesSafe.size());
+
+        clearValuesSafe.stream()
+                .map(ClearValue::toStruct)
+                .forEachOrdered(clearValuesBuffer::put);
+
+        clearValuesBuffer.flip();
 
         final VkRenderPassBeginInfo renderPassBeginInfo = VkRenderPassBeginInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
                 .renderPass(renderPass.getAddress())
                 .framebuffer(framebuffer.getAddress())
-                .pClearValues(clearValues);
+                .pClearValues(clearValuesBuffer);
 
         renderPassBeginInfo.renderArea().offset()
-                .x(0)
-                .y(0);
+                .x(renderArea.getOffset().getX())
+                .y(renderArea.getOffset().getY());
 
         renderPassBeginInfo.renderArea().extent()
-                .width(imageExtent.getWidth())
-                .height(imageExtent.getHeight());
+                .width(renderArea.getExtent().getWidth())
+                .height(renderArea.getExtent().getHeight());
 
         try {
-            vkCmdBeginRenderPass(commandBuffer.unwrap(), renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBeginRenderPass(commandBuffer.unwrap(), renderPassBeginInfo, HasValue.getValue(subpassContents));
         } finally {
-            clearValues.free();
+            clearValuesBuffer.free();
             renderPassBeginInfo.free();
         }
     }

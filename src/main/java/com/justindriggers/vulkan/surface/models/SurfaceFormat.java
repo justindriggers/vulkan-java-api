@@ -1,7 +1,7 @@
 package com.justindriggers.vulkan.surface.models;
 
-import com.justindriggers.vulkan.models.ColorFormat;
 import com.justindriggers.vulkan.models.ColorSpace;
+import com.justindriggers.vulkan.models.Format;
 import com.justindriggers.vulkan.models.HasValue;
 import org.lwjgl.vulkan.VkSurfaceFormatKHR;
 
@@ -9,23 +9,23 @@ import java.util.Objects;
 
 public class SurfaceFormat {
 
-    private final ColorFormat format;
+    private final Format format;
     private final ColorSpace colorSpace;
 
     public SurfaceFormat(final VkSurfaceFormatKHR vkSurfaceFormatKHR) {
         this(
-                HasValue.getByValue(vkSurfaceFormatKHR.format(), ColorFormat.class),
+                HasValue.getByValue(vkSurfaceFormatKHR.format(), Format.class),
                 HasValue.getByValue(vkSurfaceFormatKHR.colorSpace(), ColorSpace.class)
         );
     }
 
-    public SurfaceFormat(final ColorFormat format,
+    public SurfaceFormat(final Format format,
                          final ColorSpace colorSpace) {
         this.format = format;
         this.colorSpace = colorSpace;
     }
 
-    public ColorFormat getFormat() {
+    public Format getFormat() {
         return format;
     }
 

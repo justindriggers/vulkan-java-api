@@ -1,5 +1,6 @@
-package com.justindriggers.vulkan.models;
+package com.justindriggers.vulkan.image.models;
 
+import com.justindriggers.vulkan.models.Maskable;
 import org.lwjgl.vulkan.VK10;
 
 public enum ImageUsage implements Maskable {
