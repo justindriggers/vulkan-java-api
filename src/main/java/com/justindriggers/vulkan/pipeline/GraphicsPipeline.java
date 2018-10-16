@@ -2,19 +2,30 @@ package com.justindriggers.vulkan.pipeline;
 
 import com.justindriggers.vulkan.devices.logical.LogicalDevice;
 import com.justindriggers.vulkan.instance.VulkanFunction;
-import com.justindriggers.vulkan.models.Extent2D;
 import com.justindriggers.vulkan.models.HasValue;
 import com.justindriggers.vulkan.models.Maskable;
+import com.justindriggers.vulkan.models.Rect2D;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
+import com.justindriggers.vulkan.pipeline.models.PipelineCreateFlag;
 import com.justindriggers.vulkan.pipeline.models.assembly.InputAssemblyState;
+import com.justindriggers.vulkan.pipeline.models.colorblend.ColorBlendAttachmentState;
+import com.justindriggers.vulkan.pipeline.models.colorblend.ColorBlendState;
+import com.justindriggers.vulkan.pipeline.models.depth.DepthStencilState;
+import com.justindriggers.vulkan.pipeline.models.depth.StencilOperationState;
+import com.justindriggers.vulkan.pipeline.models.multisample.MultisampleState;
+import com.justindriggers.vulkan.pipeline.models.rasterization.RasterizationState;
 import com.justindriggers.vulkan.pipeline.models.vertex.VertexInputAttribute;
 import com.justindriggers.vulkan.pipeline.models.vertex.VertexInputBinding;
 import com.justindriggers.vulkan.pipeline.models.vertex.VertexInputState;
+import com.justindriggers.vulkan.pipeline.models.viewport.Viewport;
+import com.justindriggers.vulkan.pipeline.models.viewport.ViewportState;
 import com.justindriggers.vulkan.pipeline.shader.ShaderStage;
 import com.justindriggers.vulkan.swapchain.RenderPass;
+import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.VkGraphicsPipelineCreateInfo;
 import org.lwjgl.vulkan.VkPipelineColorBlendAttachmentState;
 import org.lwjgl.vulkan.VkPipelineColorBlendStateCreateInfo;
+import org.lwjgl.vulkan.VkPipelineDepthStencilStateCreateInfo;
 import org.lwjgl.vulkan.VkPipelineInputAssemblyStateCreateInfo;
 import org.lwjgl.vulkan.VkPipelineMultisampleStateCreateInfo;
 import org.lwjgl.vulkan.VkPipelineRasterizationStateCreateInfo;
@@ -22,6 +33,7 @@ import org.lwjgl.vulkan.VkPipelineShaderStageCreateInfo;
 import org.lwjgl.vulkan.VkPipelineVertexInputStateCreateInfo;
 import org.lwjgl.vulkan.VkPipelineViewportStateCreateInfo;
 import org.lwjgl.vulkan.VkRect2D;
+import org.lwjgl.vulkan.VkStencilOpState;
 import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
 import org.lwjgl.vulkan.VkVertexInputBindingDescription;
 import org.lwjgl.vulkan.VkViewport;
@@ -30,26 +42,15 @@ import java.nio.LongBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
 import static org.lwjgl.system.MemoryUtil.memUTF8;
-import static org.lwjgl.vulkan.VK10.VK_BLEND_FACTOR_ONE;
-import static org.lwjgl.vulkan.VK10.VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-import static org.lwjgl.vulkan.VK10.VK_BLEND_FACTOR_SRC_ALPHA;
-import static org.lwjgl.vulkan.VK10.VK_BLEND_FACTOR_ZERO;
-import static org.lwjgl.vulkan.VK10.VK_BLEND_OP_ADD;
-import static org.lwjgl.vulkan.VK10.VK_COLOR_COMPONENT_A_BIT;
-import static org.lwjgl.vulkan.VK10.VK_COLOR_COMPONENT_B_BIT;
-import static org.lwjgl.vulkan.VK10.VK_COLOR_COMPONENT_G_BIT;
-import static org.lwjgl.vulkan.VK10.VK_COLOR_COMPONENT_R_BIT;
-import static org.lwjgl.vulkan.VK10.VK_CULL_MODE_BACK_BIT;
-import static org.lwjgl.vulkan.VK10.VK_FRONT_FACE_COUNTER_CLOCKWISE;
 import static org.lwjgl.vulkan.VK10.VK_NULL_HANDLE;
-import static org.lwjgl.vulkan.VK10.VK_POLYGON_MODE_FILL;
-import static org.lwjgl.vulkan.VK10.VK_SAMPLE_COUNT_1_BIT;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -64,14 +65,21 @@ public class GraphicsPipeline extends DisposablePointer {
     private final LogicalDevice device;
 
     public GraphicsPipeline(final LogicalDevice device,
+                            final Set<PipelineCreateFlag> flags,
                             final List<ShaderStage> stages,
                             final VertexInputState vertexInputState,
                             final InputAssemblyState inputAssemblyState,
-                            final Extent2D imageExtent,
+                            final ViewportState viewportState,
+                            final RasterizationState rasterizationState,
+                            final MultisampleState multisampleState,
+                            final DepthStencilState depthStencilState,
+                            final ColorBlendState colorBlendState,
                             final RenderPass renderPass,
-                            final PipelineLayout pipelineLayout) {
-        super(createGraphicsPipeline(device, stages, vertexInputState, inputAssemblyState, imageExtent, renderPass,
-                pipelineLayout));
+                            final PipelineLayout pipelineLayout,
+                            final int subpassIndex) {
+        super(createGraphicsPipeline(device, flags, stages, vertexInputState, inputAssemblyState, viewportState,
+                rasterizationState, multisampleState, depthStencilState, colorBlendState, renderPass, pipelineLayout,
+                subpassIndex));
         this.device = device;
     }
 
@@ -81,12 +89,18 @@ public class GraphicsPipeline extends DisposablePointer {
     }
 
     private static long createGraphicsPipeline(final LogicalDevice device,
+                                               final Set<PipelineCreateFlag> flags,
                                                final List<ShaderStage> stages,
                                                final VertexInputState vertexInputState,
                                                final InputAssemblyState inputAssemblyState,
-                                               final Extent2D imageExtent,
+                                               final ViewportState viewportState,
+                                               final RasterizationState rasterizationState,
+                                               final MultisampleState multisampleState,
+                                               final DepthStencilState depthStencilState,
+                                               final ColorBlendState colorBlendState,
                                                final RenderPass renderPass,
-                                               final PipelineLayout pipelineLayout) {
+                                               final PipelineLayout pipelineLayout,
+                                               final int subpassIndex) {
         final long result;
 
         final LongBuffer graphicsPipeline = memAllocLong(1);
@@ -150,73 +164,135 @@ public class GraphicsPipeline extends DisposablePointer {
                 .topology(HasValue.getValue(inputAssemblyState.getTopology()))
                 .primitiveRestartEnable(inputAssemblyState.isPrimitiveRestartEnabled());
 
-        final VkViewport.Buffer viewport = VkViewport.calloc(1)
-                .x(0)
-                .y(imageExtent.getHeight())
-                .width(imageExtent.getWidth())
-                .height(-imageExtent.getHeight())
-                .minDepth(0.0f)
-                .maxDepth(1.0f);
+        final List<Viewport> viewportsSafe = Optional.ofNullable(viewportState.getViewports())
+                .orElseGet(Collections::emptyList);
 
-        final VkRect2D.Buffer scissors = VkRect2D.calloc(1);
+        final VkViewport.Buffer viewports = VkViewport.calloc(viewportsSafe.size());
 
-        scissors.extent()
-                .width(imageExtent.getWidth())
-                .height(imageExtent.getHeight());
+        viewportsSafe.stream()
+                .map(viewport -> VkViewport.calloc()
+                        .x(viewport.getX())
+                        .y(viewport.getY())
+                        .width(viewport.getWidth())
+                        .height(viewport.getHeight())
+                        .minDepth(viewport.getMinDepth())
+                        .maxDepth(viewport.getMaxDepth()))
+                .forEachOrdered(viewports::put);
 
-        scissors.offset()
-                .x(0)
-                .y(0);
+        viewports.flip();
+
+        final List<Rect2D> scissorsSafe = Optional.ofNullable(viewportState.getScissors())
+                .orElseGet(Collections::emptyList);
+
+        final VkRect2D.Buffer scissors = VkRect2D.calloc(scissorsSafe.size());
+
+        scissorsSafe.stream()
+                .map(scissor -> {
+                    final VkRect2D rect2D = VkRect2D.calloc();
+
+                    rect2D.extent()
+                            .width(scissor.getExtent().getWidth())
+                            .height(scissor.getExtent().getHeight());
+
+                    rect2D.offset()
+                            .x(scissor.getOffset().getX())
+                            .y(scissor.getOffset().getY());
+
+                    return rect2D;
+                }).forEachOrdered(scissors::put);
+
+        scissors.flip();
 
         final VkPipelineViewportStateCreateInfo viewportStateCreateInfo = VkPipelineViewportStateCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO)
-                .pViewports(viewport)
+                .pViewports(viewports)
                 .pScissors(scissors);
 
         final VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = VkPipelineRasterizationStateCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO)
-                .depthClampEnable(false)
-                .rasterizerDiscardEnable(false)
-                .polygonMode(VK_POLYGON_MODE_FILL)
-                .lineWidth(1.0f)
-                .cullMode(VK_CULL_MODE_BACK_BIT)
-                .frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE)
-                .depthBiasEnable(false);
+                .depthClampEnable(rasterizationState.isDepthClampEnabled())
+                .rasterizerDiscardEnable(rasterizationState.isRasterizerDiscardEnabled())
+                .polygonMode(HasValue.getValue(rasterizationState.getPolygonMode()))
+                .cullMode(Maskable.toBitMask(rasterizationState.getCullMode()))
+                .frontFace(HasValue.getValue(rasterizationState.getFrontFace()))
+                .depthBiasEnable(rasterizationState.isDepthBiasEnabled())
+                .depthBiasConstantFactor(rasterizationState.getDepthBiasConstantFactor())
+                .depthBiasClamp(rasterizationState.getDepthBiasClamp())
+                .depthBiasSlopeFactor(rasterizationState.getDepthBiasSlopeFactor())
+                .lineWidth(rasterizationState.getLineWidth());
 
         final VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = VkPipelineMultisampleStateCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO)
-                .sampleShadingEnable(false)
-                .rasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
+                .rasterizationSamples(Maskable.toBitMask(multisampleState.getRasterizationSamples()))
+                .sampleShadingEnable(multisampleState.isSampleShadingEnabled())
+                .minSampleShading(multisampleState.getMinSampleShading())
+                .alphaToCoverageEnable(multisampleState.isAlphaToCoverageEnabled())
+                .alphaToOneEnable(multisampleState.isAlphaToOneEnabled());
 
-        final VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachmentState = VkPipelineColorBlendAttachmentState.calloc(1)
-                .colorWriteMask(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-                .blendEnable(true)
-                .srcColorBlendFactor(VK_BLEND_FACTOR_SRC_ALPHA)
-                .dstColorBlendFactor(VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA)
-                .colorBlendOp(VK_BLEND_OP_ADD)
-                .srcAlphaBlendFactor(VK_BLEND_FACTOR_ONE)
-                .dstAlphaBlendFactor(VK_BLEND_FACTOR_ZERO)
-                .alphaBlendOp(VK_BLEND_OP_ADD);
+        final VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = Optional.ofNullable(depthStencilState)
+                .map(state -> VkPipelineDepthStencilStateCreateInfo.calloc()
+                        .sType(VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO)
+                        .depthTestEnable(state.isDepthTestEnabled())
+                        .depthWriteEnable(state.isDepthWriteEnabled())
+                        .depthCompareOp(HasValue.getValue(state.getDepthCompareOperator()))
+                        .depthBoundsTestEnable(state.isDepthBoundsTestEnabled())
+                        .stencilTestEnable(state.isStencilTestEnabled())
+                        .front(getVkStencilOpState(state.getFrontOperationState()))
+                        .back(getVkStencilOpState(state.getBackOperationState()))
+                        .minDepthBounds(state.getMinDepthBounds())
+                        .maxDepthBounds(state.getMaxDepthBounds()))
+                .orElse(null);
+
+        final List<ColorBlendAttachmentState> colorBlendAttachmentStatesSafe = Optional.ofNullable(colorBlendState.getAttachments())
+                .orElseGet(Collections::emptyList);
+
+        final VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachmentStates = VkPipelineColorBlendAttachmentState.calloc(colorBlendAttachmentStatesSafe.size());
+
+        colorBlendAttachmentStatesSafe.stream()
+                .map(state -> VkPipelineColorBlendAttachmentState.calloc()
+                        .blendEnable(state.isBlendEnabled())
+                        .srcColorBlendFactor(HasValue.getValue(state.getSourceColorBlendFactor()))
+                        .dstColorBlendFactor(HasValue.getValue(state.getDestinationColorBlendFactor()))
+                        .colorBlendOp(HasValue.getValue(state.getColorBlendOperation()))
+                        .srcAlphaBlendFactor(HasValue.getValue(state.getSourceAlphaBlendFactor()))
+                        .dstAlphaBlendFactor(HasValue.getValue(state.getDestinationAlphaBlendFactor()))
+                        .alphaBlendOp(HasValue.getValue(state.getAlphaBlendOperation()))
+                        .colorWriteMask(Maskable.toBitMask(state.getColorWrites())))
+                .forEachOrdered(colorBlendAttachmentStates::put);
+
+        colorBlendAttachmentStates.flip();
+
+        final float[] blendConstants = Optional.ofNullable(colorBlendState.getBlendConstants())
+                .orElseGet(() -> new float[4]);
+
+        final int logicOp = colorBlendState.isLogicOpEnabled() ? HasValue.getValue(colorBlendState.getLogicalOperation()) : 0;
 
         final VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = VkPipelineColorBlendStateCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO)
-                .logicOpEnable(false)
-                .pAttachments(colorBlendAttachmentState);
+                .logicOpEnable(colorBlendState.isLogicOpEnabled())
+                .logicOp(logicOp)
+                .pAttachments(colorBlendAttachmentStates)
+                .blendConstants(0, blendConstants[0])
+                .blendConstants(1, blendConstants[1])
+                .blendConstants(2, blendConstants[2])
+                .blendConstants(3, blendConstants[3]);
 
         final VkGraphicsPipelineCreateInfo.Buffer graphicsPipelineCreateInfo = VkGraphicsPipelineCreateInfo.calloc(1)
                 .sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO)
+                .flags(Maskable.toBitMask(flags))
                 .pStages(shaderStageCreateInfos)
                 .pVertexInputState(vertexInputStateCreateInfo)
                 .pInputAssemblyState(inputAssemblyStateCreateInfo)
+                .pTessellationState(null) // TODO
                 .pViewportState(viewportStateCreateInfo)
                 .pRasterizationState(rasterizationStateCreateInfo)
                 .pMultisampleState(multisampleStateCreateInfo)
-                .pDepthStencilState(null)
+                .pDepthStencilState(depthStencilStateCreateInfo)
                 .pColorBlendState(colorBlendStateCreateInfo)
                 .pDynamicState(null)
                 .layout(pipelineLayout.getAddress())
                 .renderPass(renderPass.getAddress())
-                .subpass(0);
+                .subpass(subpassIndex);
 
         try {
             VulkanFunction.execute(() -> vkCreateGraphicsPipelines(device.unwrap(), VK_NULL_HANDLE,
@@ -231,16 +307,29 @@ public class GraphicsPipeline extends DisposablePointer {
             vertexInputAttributeDescriptions.free();
             vertexInputStateCreateInfo.free();
             inputAssemblyStateCreateInfo.free();
-            viewport.free();
-            scissors.free();
             viewportStateCreateInfo.free();
             rasterizationStateCreateInfo.free();
             multisampleStateCreateInfo.free();
-            colorBlendAttachmentState.free();
+
+            Optional.ofNullable(depthStencilStateCreateInfo).ifPresent(Struct::free);
+
             colorBlendStateCreateInfo.free();
             graphicsPipelineCreateInfo.free();
         }
 
         return result;
+    }
+
+    private static VkStencilOpState getVkStencilOpState(final StencilOperationState stencilOperationState) {
+        return Optional.ofNullable(stencilOperationState)
+                .map(state -> VkStencilOpState.calloc()
+                        .failOp(HasValue.getValue(state.getFailOperation()))
+                        .passOp(HasValue.getValue(state.getPassOperation()))
+                        .depthFailOp(HasValue.getValue(state.getDepthFailOperation()))
+                        .compareOp(HasValue.getValue(state.getCompareOperator()))
+                        .compareMask(state.getCompareMask())
+                        .writeMask(state.getWriteMask())
+                        .reference(state.getReference()))
+                .orElseGet(VkStencilOpState::calloc);
     }
 }

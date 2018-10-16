@@ -8,6 +8,9 @@ import com.justindriggers.vulkan.models.pointers.DisposablePointer;
 import org.lwjgl.vulkan.VkFramebufferCreateInfo;
 
 import java.nio.LongBuffer;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
@@ -21,9 +24,9 @@ public class Framebuffer extends DisposablePointer {
 
     public Framebuffer(final LogicalDevice device,
                        final RenderPass renderPass,
-                       final ImageView imageView,
+                       final List<ImageView> attachments,
                        final Extent2D imageExtent) {
-        super(createFramebuffer(device, renderPass, imageView, imageExtent));
+        super(createFramebuffer(device, renderPass, attachments, imageExtent));
         this.device = device;
     }
 
@@ -34,19 +37,27 @@ public class Framebuffer extends DisposablePointer {
 
     private static long createFramebuffer(final LogicalDevice device,
                                           final RenderPass renderPass,
-                                          final ImageView imageView,
+                                          final List<ImageView> attachments,
                                           final Extent2D imageExtent) {
         final long result;
 
-        final LongBuffer attachments = memAllocLong(1);
-        attachments.put(imageView.getAddress()).flip();
+        final List<ImageView> attachmentsSafe = Optional.ofNullable(attachments)
+                .orElseGet(Collections::emptyList);
+
+        final LongBuffer attachmentBuffer = memAllocLong(attachmentsSafe.size());
+
+        attachmentsSafe.stream()
+                .mapToLong(ImageView::getAddress)
+                .forEachOrdered(attachmentBuffer::put);
+
+        attachmentBuffer.flip();
 
         final LongBuffer framebuffer = memAllocLong(1);
 
         final VkFramebufferCreateInfo framebufferCreateInfo = VkFramebufferCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO)
                 .renderPass(renderPass.getAddress())
-                .pAttachments(attachments)
+                .pAttachments(attachmentBuffer)
                 .width(imageExtent.getWidth())
                 .height(imageExtent.getHeight())
                 .layers(1);
@@ -57,7 +68,7 @@ public class Framebuffer extends DisposablePointer {
 
             result = framebuffer.get(0);
         } finally {
-            memFree(attachments);
+            memFree(attachmentBuffer);
             memFree(framebuffer);
 
             framebufferCreateInfo.free();

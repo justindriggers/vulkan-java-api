@@ -1,19 +1,21 @@
 package com.justindriggers.vulkan.image;
 
 import com.justindriggers.vulkan.devices.logical.LogicalDevice;
+import com.justindriggers.vulkan.image.models.ImageAspect;
+import com.justindriggers.vulkan.image.models.ImageViewType;
 import com.justindriggers.vulkan.instance.VulkanFunction;
-import com.justindriggers.vulkan.models.ColorFormat;
+import com.justindriggers.vulkan.models.Format;
 import com.justindriggers.vulkan.models.HasValue;
+import com.justindriggers.vulkan.models.Maskable;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
 import org.lwjgl.vulkan.VkImageViewCreateInfo;
 
 import java.nio.LongBuffer;
+import java.util.Set;
 
 import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
 import static org.lwjgl.vulkan.VK10.VK_COMPONENT_SWIZZLE_IDENTITY;
-import static org.lwjgl.vulkan.VK10.VK_IMAGE_ASPECT_COLOR_BIT;
-import static org.lwjgl.vulkan.VK10.VK_IMAGE_VIEW_TYPE_2D;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 import static org.lwjgl.vulkan.VK10.vkCreateImageView;
 import static org.lwjgl.vulkan.VK10.vkDestroyImageView;
@@ -24,8 +26,12 @@ public class ImageView extends DisposablePointer {
 
     public ImageView(final LogicalDevice device,
                      final Image image,
-                     final ColorFormat format) {
-        super(createImageView(device, image, format));
+                     final ImageViewType viewType,
+                     final Format format,
+                     final Set<ImageAspect> aspects,
+                     final int mipLevelCount,
+                     final int layerCount) {
+        super(createImageView(device, image, viewType, format, aspects, mipLevelCount, layerCount));
         this.device = device;
     }
 
@@ -36,7 +42,11 @@ public class ImageView extends DisposablePointer {
 
     private static long createImageView(final LogicalDevice device,
                                         final Image image,
-                                        final ColorFormat format) {
+                                        final ImageViewType viewType,
+                                        final Format format,
+                                        final Set<ImageAspect> aspects,
+                                        final int mipLevelCount,
+                                        final int layerCount) {
         final long result;
 
         final LongBuffer imageView = memAllocLong(1);
@@ -44,7 +54,7 @@ public class ImageView extends DisposablePointer {
         final VkImageViewCreateInfo imageViewCreateInfo = VkImageViewCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO)
                 .image(image.getAddress())
-                .viewType(VK_IMAGE_VIEW_TYPE_2D)
+                .viewType(HasValue.getValue(viewType))
                 .format(HasValue.getValue(format));
 
         imageViewCreateInfo.components()
@@ -54,11 +64,11 @@ public class ImageView extends DisposablePointer {
                 .a(VK_COMPONENT_SWIZZLE_IDENTITY);
 
         imageViewCreateInfo.subresourceRange()
-                .aspectMask(VK_IMAGE_ASPECT_COLOR_BIT)
+                .aspectMask(Maskable.toBitMask(aspects))
                 .baseMipLevel(0)
-                .levelCount(1)
+                .levelCount(mipLevelCount)
                 .baseArrayLayer(0)
-                .layerCount(1);
+                .layerCount(layerCount);
 
         try {
             VulkanFunction.execute(() -> vkCreateImageView(device.unwrap(), imageViewCreateInfo, null, imageView));

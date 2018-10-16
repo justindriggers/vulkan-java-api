@@ -1,7 +1,7 @@
 package com.justindriggers.vulkan.surface.models.capabilities;
 
+import com.justindriggers.vulkan.image.models.ImageUsage;
 import com.justindriggers.vulkan.models.Extent2D;
-import com.justindriggers.vulkan.models.ImageUsage;
 import com.justindriggers.vulkan.models.Maskable;
 import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 

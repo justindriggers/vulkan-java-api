@@ -2,10 +2,11 @@ package com.justindriggers.vulkan.swapchain;
 
 import com.justindriggers.vulkan.devices.logical.LogicalDevice;
 import com.justindriggers.vulkan.image.Image;
+import com.justindriggers.vulkan.image.SwapchainImage;
 import com.justindriggers.vulkan.instance.VulkanFunction;
-import com.justindriggers.vulkan.models.ColorFormat;
 import com.justindriggers.vulkan.models.ColorSpace;
 import com.justindriggers.vulkan.models.Extent2D;
+import com.justindriggers.vulkan.models.Format;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
 import com.justindriggers.vulkan.models.pointers.Pointer;
 import com.justindriggers.vulkan.queue.QueueFamily;
@@ -45,7 +46,7 @@ public class Swapchain extends DisposablePointer {
     public Swapchain(final LogicalDevice device,
                      final Surface surface,
                      final int minImageCount,
-                     final ColorFormat imageFormat,
+                     final Format imageFormat,
                      final ColorSpace imageColorSpace,
                      final Extent2D imageExtent,
                      final SurfaceTransform preTransform,
@@ -95,7 +96,7 @@ public class Swapchain extends DisposablePointer {
 
                 result = IntStream.range(0, imageCount)
                         .mapToLong(images::get)
-                        .mapToObj(Image::new)
+                        .mapToObj(SwapchainImage::new)
                         .collect(Collectors.toList());
             } finally {
                 memFree(imageCountBuffer);
@@ -139,7 +140,7 @@ public class Swapchain extends DisposablePointer {
     private static long createSwapchain(final LogicalDevice device,
                                         final Surface surface,
                                         final int minImageCount,
-                                        final ColorFormat imageFormat,
+                                        final Format imageFormat,
                                         final ColorSpace imageColorSpace,
                                         final Extent2D imageExtent,
                                         final SurfaceTransform preTransform,
