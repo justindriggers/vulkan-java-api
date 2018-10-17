@@ -1,8 +1,10 @@
 package com.justindriggers.vulkan.command;
 
+import com.justindriggers.vulkan.command.models.CommandBufferLevel;
 import com.justindriggers.vulkan.command.models.CommandPoolCreateFlag;
 import com.justindriggers.vulkan.devices.logical.LogicalDevice;
 import com.justindriggers.vulkan.instance.VulkanFunction;
+import com.justindriggers.vulkan.models.HasValue;
 import com.justindriggers.vulkan.models.Maskable;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
 import com.justindriggers.vulkan.queue.QueueFamily;
@@ -46,7 +48,7 @@ public class CommandPool extends DisposablePointer {
         vkDestroyCommandPool(device.unwrap(), address, null);
     }
 
-    public List<CommandBuffer> createCommandBuffers(final int count) {
+    public List<CommandBuffer> createCommandBuffers(final CommandBufferLevel commandBufferLevel, final int count) {
         if (count <= 0) {
             throw new IllegalArgumentException("Count must be at least 1 when creating command buffers");
         }
@@ -58,7 +60,7 @@ public class CommandPool extends DisposablePointer {
         final VkCommandBufferAllocateInfo commandBufferAllocateInfo = VkCommandBufferAllocateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
                 .commandPool(getAddress())
-                .level(VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+                .level(HasValue.getValue(commandBufferLevel))
                 .commandBufferCount(count);
 
         try {
