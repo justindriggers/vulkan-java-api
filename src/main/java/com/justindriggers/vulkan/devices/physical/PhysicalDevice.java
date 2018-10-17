@@ -1,17 +1,22 @@
 package com.justindriggers.vulkan.devices.physical;
 
+import com.justindriggers.vulkan.devices.physical.models.FormatFeature;
+import com.justindriggers.vulkan.devices.physical.models.FormatProperties;
 import com.justindriggers.vulkan.devices.physical.models.MemoryHeap;
 import com.justindriggers.vulkan.devices.physical.models.MemoryProperty;
 import com.justindriggers.vulkan.devices.physical.models.MemoryType;
 import com.justindriggers.vulkan.devices.physical.models.PhysicalDeviceProperties;
 import com.justindriggers.vulkan.instance.VulkanFunction;
 import com.justindriggers.vulkan.models.Extension;
+import com.justindriggers.vulkan.models.Format;
+import com.justindriggers.vulkan.models.HasValue;
 import com.justindriggers.vulkan.models.Maskable;
 import com.justindriggers.vulkan.models.pointers.ReferencePointer;
 import com.justindriggers.vulkan.queue.QueueCapability;
 import com.justindriggers.vulkan.queue.QueueFamily;
 import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.VkExtensionProperties;
+import org.lwjgl.vulkan.VkFormatProperties;
 import org.lwjgl.vulkan.VkMemoryType;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkPhysicalDeviceMemoryProperties;
@@ -28,6 +33,7 @@ import java.util.stream.IntStream;
 import static org.lwjgl.system.MemoryUtil.memAllocInt;
 import static org.lwjgl.system.MemoryUtil.memFree;
 import static org.lwjgl.vulkan.VK10.vkEnumerateDeviceExtensionProperties;
+import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceFormatProperties;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceMemoryProperties;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceProperties;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceQueueFamilyProperties;
@@ -178,6 +184,31 @@ public class PhysicalDevice extends ReferencePointer<VkPhysicalDevice> {
                     .collect(Collectors.toList());
         } finally {
             physicalDeviceMemoryProperties.free();
+        }
+
+        return result;
+    }
+
+    public FormatProperties getFormatProperties(final Format format) {
+        final FormatProperties result;
+
+        final VkFormatProperties formatProperties = VkFormatProperties.calloc();
+
+        try {
+            vkGetPhysicalDeviceFormatProperties(unwrap(), HasValue.getValue(format), formatProperties);
+
+            final Set<FormatFeature> linearTilingFeatures = Maskable.fromBitMask(
+                    formatProperties.linearTilingFeatures(), FormatFeature.class);
+
+            final Set<FormatFeature> optimalTilingFeatures = Maskable.fromBitMask(
+                    formatProperties.optimalTilingFeatures(), FormatFeature.class);
+
+            final Set<FormatFeature> bufferFeatures = Maskable.fromBitMask(
+                    formatProperties.bufferFeatures(), FormatFeature.class);
+
+            result = new FormatProperties(linearTilingFeatures, optimalTilingFeatures, bufferFeatures);
+        } finally {
+            formatProperties.free();
         }
 
         return result;
