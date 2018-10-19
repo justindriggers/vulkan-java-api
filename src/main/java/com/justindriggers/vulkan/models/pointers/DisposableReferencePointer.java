@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-public abstract class DisposableReferencePointer<T> extends ReferencePointer<T> implements AutoCloseable {
+public abstract class DisposableReferencePointer<T> extends ReferencePointer<T> implements Disposable {
 
     private final AtomicBoolean isDisposed;
 
