@@ -3,7 +3,7 @@ package com.justindriggers.vulkan.models.pointers;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class DisposablePointer extends Pointer implements AutoCloseable {
+public abstract class DisposablePointer extends Pointer implements Disposable {
 
     private final AtomicBoolean isDisposed;
 
