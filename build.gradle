@@ -58,7 +58,7 @@ bintray {
         websiteUrl = 'https://github.com/justindriggers/vulkan-java-api'
         issueTrackerUrl = 'https://github.com/justindriggers/vulkan-java-api/issues'
         vcsUrl = 'https://github.com/justindriggers/vulkan-java-api.git'
-        licenses = ['Apache-2.0']
+        licenses = ['MIT']
         labels = ['vulkan', 'java', 'api']
         publicDownloadNumbers = true
         version.released = new Date()
