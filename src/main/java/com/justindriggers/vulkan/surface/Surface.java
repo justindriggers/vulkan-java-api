@@ -12,7 +12,6 @@ import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 import org.lwjgl.vulkan.VkSurfaceFormatKHR;
 
 import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -20,22 +19,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.system.MemoryUtil.memAllocInt;
-import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
 import static org.lwjgl.vulkan.KHRSurface.vkDestroySurfaceKHR;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceFormatsKHR;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfacePresentModesKHR;
 
-public class Surface extends DisposablePointer {
+public abstract class Surface extends DisposablePointer {
 
     private final VulkanInstance vulkanInstance;
 
     public Surface(final VulkanInstance vulkanInstance,
-                   final long windowHandle) {
-        super(createSurface(vulkanInstance, windowHandle));
+                   final long handle) {
+        super(handle);
         this.vulkanInstance = vulkanInstance;
     }
 
@@ -151,24 +148,6 @@ public class Surface extends DisposablePointer {
             }
         } else {
             result = Collections.emptySet();
-        }
-
-        return result;
-    }
-
-    private static long createSurface(final VulkanInstance vulkanInstance,
-                                      final long windowHandle) {
-        final long result;
-
-        final LongBuffer surfaceHandle = memAllocLong(1);
-
-        try {
-            VulkanFunction.execute(() -> glfwCreateWindowSurface(vulkanInstance.unwrap(), windowHandle, null,
-                    surfaceHandle));
-
-            result = surfaceHandle.get(0);
-        } finally {
-            memFree(surfaceHandle);
         }
 
         return result;

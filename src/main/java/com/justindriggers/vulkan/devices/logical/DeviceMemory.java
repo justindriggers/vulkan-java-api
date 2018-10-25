@@ -21,13 +21,16 @@ public class DeviceMemory extends DisposablePointer {
 
     private final LogicalDevice device;
     private final MemoryType memoryType;
+    private final long size;
 
     DeviceMemory(final LogicalDevice device,
                  final MemoryType memoryType,
-                 final long address) {
+                 final long address,
+                 final long size) {
         super(address);
         this.device = device;
         this.memoryType = memoryType;
+        this.size = size;
     }
 
     @Override
@@ -63,6 +66,10 @@ public class DeviceMemory extends DisposablePointer {
 
             return result;
         });
+    }
+
+    long getSize() {
+        return size;
     }
 
     void unmap() {
