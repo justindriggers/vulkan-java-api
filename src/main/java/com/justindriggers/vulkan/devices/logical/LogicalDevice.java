@@ -1,5 +1,6 @@
 package com.justindriggers.vulkan.devices.logical;
 
+import com.justindriggers.utilities.StringUtils;
 import com.justindriggers.vulkan.devices.physical.PhysicalDevice;
 import com.justindriggers.vulkan.devices.physical.models.MemoryType;
 import com.justindriggers.vulkan.instance.VulkanFunction;
@@ -16,10 +17,8 @@ import org.lwjgl.vulkan.VkQueue;
 
 import java.nio.FloatBuffer;
 import java.nio.LongBuffer;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -88,7 +87,7 @@ public class LogicalDevice extends DisposableReferencePointer<VkDevice> {
         try {
             VulkanFunction.execute(() -> vkAllocateMemory(unwrap(), memoryAllocateInfo, null, memory));
 
-            result = new DeviceMemory(this, memoryType, memory.get(0));
+            result = new DeviceMemory(this, memoryType, memory.get(0), size);
         } finally {
             memFree(memory);
 
@@ -125,7 +124,7 @@ public class LogicalDevice extends DisposableReferencePointer<VkDevice> {
 
         queueCreateInfos.flip();
 
-        final PointerBuffer enabledExtensions = getEnabledExtensions(extensions);
+        final PointerBuffer enabledExtensions = StringUtils.getPointerBufferFromStrings(extensions);
         final PointerBuffer devicePointer = memAllocPointer(1);
 
         final VkDeviceCreateInfo deviceCreateInfo = VkDeviceCreateInfo.calloc()
@@ -154,21 +153,6 @@ public class LogicalDevice extends DisposableReferencePointer<VkDevice> {
 
             deviceCreateInfo.free();
         }
-
-        return result;
-    }
-
-    private static PointerBuffer getEnabledExtensions(final Set<String> extensions) {
-        final Set<String> extensionsSafe = Optional.ofNullable(extensions)
-                .orElseGet(Collections::emptySet);
-
-        final PointerBuffer result = memAllocPointer(extensionsSafe.size());
-
-        extensionsSafe.stream()
-                .map(MemoryUtil::memUTF8)
-                .forEach(result::put);
-
-        result.flip();
 
         return result;
     }
