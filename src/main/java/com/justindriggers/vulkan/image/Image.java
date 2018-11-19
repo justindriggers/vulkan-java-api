@@ -40,7 +40,6 @@ public class Image extends DisposablePointer {
     private final boolean isUserManaged;
 
     public Image(final LogicalDevice device,
-                 final Set<ImageCreateFlag> flags,
                  final ImageType imageType,
                  final Format format,
                  final Extent3D extent,
@@ -51,9 +50,10 @@ public class Image extends DisposablePointer {
                  final Set<ImageUsage> usages,
                  final SharingMode sharingMode,
                  final Set<QueueFamily> queueFamilies,
-                 final ImageLayout initialLayout) {
-        super(createImage(device, flags, imageType, format, extent, mipLevels, arrayLayers, samples, tiling, usages,
-                sharingMode, queueFamilies, initialLayout));
+                 final ImageLayout initialLayout,
+                 final ImageCreateFlag... flags) {
+        super(createImage(device, imageType, format, extent, mipLevels, arrayLayers, samples, tiling, usages,
+                sharingMode, queueFamilies, initialLayout, flags));
         this.device = device;
         isUserManaged = true;
     }
@@ -94,7 +94,6 @@ public class Image extends DisposablePointer {
     }
 
     private static long createImage(final LogicalDevice device,
-                                    final Set<ImageCreateFlag> flags,
                                     final ImageType imageType,
                                     final Format format,
                                     final Extent3D extent,
@@ -105,7 +104,8 @@ public class Image extends DisposablePointer {
                                     final Set<ImageUsage> usages,
                                     final SharingMode sharingMode,
                                     final Set<QueueFamily> queueFamilies,
-                                    final ImageLayout initialLayout) {
+                                    final ImageLayout initialLayout,
+                                    final ImageCreateFlag... flags) {
         final long result;
 
         final LongBuffer image = memAllocLong(1);

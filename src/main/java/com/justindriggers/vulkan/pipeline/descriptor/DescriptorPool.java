@@ -16,7 +16,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -37,7 +36,7 @@ public class DescriptorPool extends DisposablePointer {
     public DescriptorPool(final LogicalDevice device,
                           final DescriptorType type,
                           final int size,
-                          final Set<DescriptorPoolFlag> flags) {
+                          final DescriptorPoolFlag... flags) {
         super(createDescriptorPool(device, type, size, flags));
         this.device = device;
         this.type = type;
@@ -103,7 +102,7 @@ public class DescriptorPool extends DisposablePointer {
     private static long createDescriptorPool(final LogicalDevice device,
                                              final DescriptorType type,
                                              final int size,
-                                             final Set<DescriptorPoolFlag> flags) {
+                                             final DescriptorPoolFlag... flags) {
         final long result;
 
         final LongBuffer descriptorPool = memAllocLong(1);

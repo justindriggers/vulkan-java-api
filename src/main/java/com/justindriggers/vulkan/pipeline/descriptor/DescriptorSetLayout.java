@@ -11,7 +11,6 @@ import org.lwjgl.vulkan.VkDescriptorSetLayoutBinding;
 import org.lwjgl.vulkan.VkDescriptorSetLayoutCreateInfo;
 
 import java.nio.LongBuffer;
-import java.util.Set;
 
 import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
@@ -27,8 +26,8 @@ public class DescriptorSetLayout extends DisposablePointer {
                                final int binding,
                                final int descriptorCount,
                                final DescriptorType descriptorType,
-                               final Set<ShaderStageType> stageTypes) {
-        super(createDescriptorSetLayout(device, binding, descriptorCount, descriptorType, stageTypes));
+                               final ShaderStageType... stageFlags) {
+        super(createDescriptorSetLayout(device, binding, descriptorCount, descriptorType, stageFlags));
         this.device = device;
     }
 
@@ -41,7 +40,7 @@ public class DescriptorSetLayout extends DisposablePointer {
                                                   final int binding,
                                                   final int descriptorCount,
                                                   final DescriptorType descriptorType,
-                                                  final Set<ShaderStageType> stageTypes) {
+                                                  final ShaderStageType... stageFlags) {
         final long result;
 
         final LongBuffer descriptorSetLayout = memAllocLong(1);
@@ -50,7 +49,7 @@ public class DescriptorSetLayout extends DisposablePointer {
                 .binding(binding)
                 .descriptorCount(descriptorCount)
                 .descriptorType(HasValue.getValue(descriptorType))
-                .stageFlags(Maskable.toBitMask(stageTypes));
+                .stageFlags(Maskable.toBitMask(stageFlags));
 
         final VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = VkDescriptorSetLayoutCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO)
