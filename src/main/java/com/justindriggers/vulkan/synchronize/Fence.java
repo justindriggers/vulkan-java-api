@@ -9,7 +9,6 @@ import org.lwjgl.vulkan.VkFenceCreateInfo;
 
 import java.nio.LongBuffer;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
@@ -24,7 +23,7 @@ public class Fence extends DisposablePointer {
     private final LogicalDevice device;
 
     public Fence(final LogicalDevice device,
-                 final Set<FenceCreationFlag> fenceCreationFlags) {
+                 final FenceCreationFlag... fenceCreationFlags) {
         super(createFence(device, fenceCreationFlags));
         this.device = device;
     }
@@ -43,7 +42,7 @@ public class Fence extends DisposablePointer {
     }
 
     private static long createFence(final LogicalDevice device,
-                                    final Set<FenceCreationFlag> fenceCreationFlags) {
+                                    final FenceCreationFlag... fenceCreationFlags) {
         final long result;
 
         final LongBuffer fence = memAllocLong(1);

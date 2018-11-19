@@ -42,7 +42,6 @@ import java.nio.LongBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
@@ -65,7 +64,6 @@ public class GraphicsPipeline extends DisposablePointer {
     private final LogicalDevice device;
 
     public GraphicsPipeline(final LogicalDevice device,
-                            final Set<PipelineCreateFlag> flags,
                             final List<ShaderStage> stages,
                             final VertexInputState vertexInputState,
                             final InputAssemblyState inputAssemblyState,
@@ -76,10 +74,11 @@ public class GraphicsPipeline extends DisposablePointer {
                             final ColorBlendState colorBlendState,
                             final RenderPass renderPass,
                             final PipelineLayout pipelineLayout,
-                            final int subpassIndex) {
-        super(createGraphicsPipeline(device, flags, stages, vertexInputState, inputAssemblyState, viewportState,
+                            final int subpassIndex,
+                            final PipelineCreateFlag... flags) {
+        super(createGraphicsPipeline(device, stages, vertexInputState, inputAssemblyState, viewportState,
                 rasterizationState, multisampleState, depthStencilState, colorBlendState, renderPass, pipelineLayout,
-                subpassIndex));
+                subpassIndex, flags));
         this.device = device;
     }
 
@@ -89,7 +88,6 @@ public class GraphicsPipeline extends DisposablePointer {
     }
 
     private static long createGraphicsPipeline(final LogicalDevice device,
-                                               final Set<PipelineCreateFlag> flags,
                                                final List<ShaderStage> stages,
                                                final VertexInputState vertexInputState,
                                                final InputAssemblyState inputAssemblyState,
@@ -100,7 +98,8 @@ public class GraphicsPipeline extends DisposablePointer {
                                                final ColorBlendState colorBlendState,
                                                final RenderPass renderPass,
                                                final PipelineLayout pipelineLayout,
-                                               final int subpassIndex) {
+                                               final int subpassIndex,
+                                               final PipelineCreateFlag... flags) {
         final long result;
 
         final LongBuffer graphicsPipeline = memAllocLong(1);

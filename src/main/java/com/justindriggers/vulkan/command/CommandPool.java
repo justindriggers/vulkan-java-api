@@ -17,7 +17,6 @@ import java.nio.LongBuffer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -37,7 +36,7 @@ public class CommandPool extends DisposablePointer {
 
     public CommandPool(final LogicalDevice device,
                        final QueueFamily queueFamily,
-                       final Set<CommandPoolCreateFlag> flags) {
+                       final CommandPoolCreateFlag... flags) {
         super(createCommandPool(device, queueFamily, flags));
         this.device = device;
     }
@@ -99,7 +98,7 @@ public class CommandPool extends DisposablePointer {
 
     private static long createCommandPool(final LogicalDevice device,
                                           final QueueFamily queueFamily,
-                                          final Set<CommandPoolCreateFlag> flags) {
+                                          final CommandPoolCreateFlag... flags) {
         final long result;
 
         final LongBuffer commandPool = memAllocLong(1);
