@@ -5,12 +5,13 @@ import com.justindriggers.vulkan.instance.VulkanFunction;
 import com.justindriggers.vulkan.models.HasValue;
 import com.justindriggers.vulkan.models.Maskable;
 import com.justindriggers.vulkan.models.pointers.DisposablePointer;
-import com.justindriggers.vulkan.pipeline.descriptor.models.DescriptorType;
-import com.justindriggers.vulkan.pipeline.shader.ShaderStageType;
 import org.lwjgl.vulkan.VkDescriptorSetLayoutBinding;
 import org.lwjgl.vulkan.VkDescriptorSetLayoutCreateInfo;
 
 import java.nio.LongBuffer;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.lwjgl.system.MemoryUtil.memAllocLong;
 import static org.lwjgl.system.MemoryUtil.memFree;
@@ -23,11 +24,8 @@ public class DescriptorSetLayout extends DisposablePointer {
     private final LogicalDevice device;
 
     public DescriptorSetLayout(final LogicalDevice device,
-                               final int binding,
-                               final int descriptorCount,
-                               final DescriptorType descriptorType,
-                               final ShaderStageType... stageFlags) {
-        super(createDescriptorSetLayout(device, binding, descriptorCount, descriptorType, stageFlags));
+                               final List<DescriptorSetLayoutBinding> bindings) {
+        super(createDescriptorSetLayout(device, bindings));
         this.device = device;
     }
 
@@ -37,23 +35,29 @@ public class DescriptorSetLayout extends DisposablePointer {
     }
 
     private static long createDescriptorSetLayout(final LogicalDevice device,
-                                                  final int binding,
-                                                  final int descriptorCount,
-                                                  final DescriptorType descriptorType,
-                                                  final ShaderStageType... stageFlags) {
+                                                  final List<DescriptorSetLayoutBinding> bindings) {
         final long result;
 
         final LongBuffer descriptorSetLayout = memAllocLong(1);
 
-        final VkDescriptorSetLayoutBinding.Buffer descriptorSetLayoutBinding = VkDescriptorSetLayoutBinding.calloc(1)
-                .binding(binding)
-                .descriptorCount(descriptorCount)
-                .descriptorType(HasValue.getValue(descriptorType))
-                .stageFlags(Maskable.toBitMask(stageFlags));
+        final List<DescriptorSetLayoutBinding> bindingsSafe = Optional.ofNullable(bindings)
+                .orElseGet(Collections::emptyList);
+
+        final VkDescriptorSetLayoutBinding.Buffer descriptorSetLayoutBindings = VkDescriptorSetLayoutBinding.calloc(bindingsSafe.size());
+
+        bindingsSafe.stream()
+                .map(binding -> VkDescriptorSetLayoutBinding.calloc()
+                        .binding(binding.getBinding())
+                        .descriptorType(HasValue.getValue(binding.getDescriptorType()))
+                        .descriptorCount(binding.getDescriptorCount())
+                        .stageFlags(Maskable.toBitMask(binding.getStageFlags())))
+                .forEachOrdered(descriptorSetLayoutBindings::put);
+
+        descriptorSetLayoutBindings.flip();
 
         final VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = VkDescriptorSetLayoutCreateInfo.calloc()
                 .sType(VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO)
-                .pBindings(descriptorSetLayoutBinding);
+                .pBindings(descriptorSetLayoutBindings);
 
         try {
             VulkanFunction.execute(() -> vkCreateDescriptorSetLayout(device.unwrap(), descriptorSetLayoutCreateInfo,
@@ -63,7 +67,7 @@ public class DescriptorSetLayout extends DisposablePointer {
         } finally {
             memFree(descriptorSetLayout);
 
-            descriptorSetLayoutBinding.free();
+            descriptorSetLayoutBindings.free();
             descriptorSetLayoutCreateInfo.free();
         }
 
